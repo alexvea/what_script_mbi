@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 #
 # Script d'exemple pour extraire les noms et les dates des tables d'une base de données
 # Auteur: AV
@@ -10,7 +10,8 @@ MBI_SCRIPT_PATH="/usr/share/centreon-bi/etl"
 
 # Tableau associatif avec les noms de scripts pour chaque table et chaque serveur
 declare -A table_script_relations=(
-  ["mod_bam_reporting_ba_availabilities","Central"]="${CENTRAL_SCRIPT_PATH}/centreon-bam-rebuild-events2 --all"
+  ["",""]=""
+  ["mod_bam_reporting_ba_availabilities","Central"]="${CENTRAL_SCRIPT_PATH}/centreon-bam-rebuild-events --all"
   ["mod_bam_reporting_ba_availabilities","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --bam-only"
   ["hoststateevents","Central"]="/usr/share/centreon/cron/eventReportBuilder --config=/etc/centreon/conf.pm"
   ["hoststateevents","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --ignore-databin"
@@ -18,16 +19,21 @@ declare -A table_script_relations=(
   ["servicestateevents","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --ignore-databin"
   ["mod_bi_hoststateevents","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --events-only"
   ["mod_bi_servicestateevents","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --events-only"
-  ["mod_bi_time","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
+#  ["mod_bi_time","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
   ["mod_bi_hostavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
   ["mod_bi_serviceavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
+  ["mod_bi_hgmonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
+  ["mod_bi_hgservicemonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
   ["data_bin","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --no-purge --databin-only"
   ["mod_bi_metricdailyvalue","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
   ["mod_bi_metricmonthcapacity","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
   ["mod_bi_metrichourlyvalue","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
-  ["mod_bi_metriccentiledailyvalue","MBI"]="script G"
-  ["mod_bi_metriccentiledailyvalue","MBI_2"]="script G_2"
-  ["mod_bi_metriccentilemonthlyvalue","MBI"]="script G"
+  ["mod_bi_metriccentiledailyvalue","MBI"]="/usr/share/centreon-bi/bin/centreonBIETL -rIC"
+  ["mod_bi_metriccentiledailyvalue","MBI_2"]="${MBI_SCRIPT_PATH}/dimensionsBuilder.pl -d"
+  ["mod_bi_metriccentiledailyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only"
+  ["mod_bi_metriccentilemonthlyvalue","MBI"]="/usr/share/centreon-bi/bin/centreonBIETL -rIC"
+  ["mod_bi_metriccentilemonthlyvalue","MBI_2"]="${MBI_SCRIPT_PATH}/dimensionsBuilder.pl -d"
+  ["mod_bi_metriccentilemonthlyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only"
 )
 
 [ -e /tmp/mib_db_content_csv ] && rm /tmp/mib_db_content_csv
@@ -41,7 +47,7 @@ function convert_to_csv {
     local script_name="${table_script_relations[$table_name,$server_name]}"
     local date_value="$3"
 
-    if [[ $date_value == "EMPTY" ]]; then
+    if [[ $date_value == "EMPTY" || "$script_name" == *"centreon-bam-rebuild-events"* ]]; then
         echo "$a;$table_name;$server_name;$script_name" >> /tmp/mib_db_content_csv
     else
         today=$(date +%Y-%m-%d)
@@ -61,8 +67,10 @@ function display_scripts {
                 else
                          table_conjug="la table"
                 fi
-                         echo "Pour $table_conjug ${table_name_ds/,/ et } : <u>(sur le serveur ${server_step_ds/_/ étape })</u>"
-                         echo \`\`\`${script_ds}\`\`\`
+                         echo "Pour $table_conjug \`\`${table_name_ds/,/ et }\`\` : <u>(sur le serveur ${server_step_ds/_/ étape })</u>"
+                         echo "\`\`\`"
+                         echo "${script_ds} >> /tmp/partial_rebuild_$today.log"
+                         echo "\`\`\`"
                 echo ""
                 echo ""
         done
@@ -93,8 +101,8 @@ for (( i=0; i<${#tables[@]}; i++ )); do
     table=${tables[$i]}
     date=${formatted_dates[$i]}
 
-   for key in "${!table_script_relations[@]}"; do
-   # for key in `printf '%s\n' "${!table_script_relations[@]}" | sort`; do
+  # for key in "${!table_script_relations[@]}"; do
+    for key in `printf '%s\n' "${!table_script_relations[@]}" | sort`; do
 
         script_table="${key%,*}"
         server_name="${key##*,}"
