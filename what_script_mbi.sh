@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Script d'exemple pour extraire les noms et les dates des tables d'une base de données
+# Script d'exemple afficher les différents scripts à exécuter selon la table et date afficher avec la commande /usr/share/centreon-bi/etl/centreonbiMonitoring.pl --db-content
 # Auteur: AV
 # Licence: MIT
 
@@ -10,6 +10,7 @@ MBI_SCRIPT_PATH="/usr/share/centreon-bi/etl"
 
 # Tableau associatif avec les noms de scripts pour chaque table et chaque serveur
 declare -A table_script_relations=(
+  # ajout d'une entrée vide afin de gérer le bonne ordre (Central / MBI) pour la première table
   ["",""]=""
   ["mod_bam_reporting_ba_availabilities","Central"]="${CENTRAL_SCRIPT_PATH}/centreon-bam-rebuild-events --all"
   ["mod_bam_reporting_ba_availabilities","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --bam-only"
@@ -38,7 +39,7 @@ declare -A table_script_relations=(
 
 [ -e /tmp/mib_db_content_csv ] && rm /tmp/mib_db_content_csv
 
-# Fonction pour afficher les informations sur la table
+# Fonction qui génère un fichier temporaire avec la correspondance entre table/script/date au format CSV
 a=0
 function convert_to_csv {
     ((a+=1))
@@ -54,7 +55,7 @@ function convert_to_csv {
         echo "$a;$table_name;$server_name;$script_name -s $date_value -e $today" >> /tmp/mib_db_content_csv
     fi
 }
-
+# Fonction qui affiche avec un formattage markdown les scripts à exécuter en fonction de la table/date
 function display_scripts {
         #Concatene les noms des tables si la commande de script est identique (comprend les dates)
         cat /tmp/mib_db_content_csv | awk -F";" 'FNR==0{print;next} {a[$4]=a[$4]?a[$4] :$1} {b[$4]=b[$4]?b[$4] "," $2:$2} {c[$4]=c[$4]?c[$4] :$3} {d[$4]=d[$4]?d[$4] :$4} END{for(i in a){print a[i]";"b[i]";"c[i]";"d[i]}}' | sort -n | while read line  || [[ -n $line ]];
@@ -81,9 +82,9 @@ function display_scripts {
 
 input=$1
 
-# Récupère le nom de chaque table à partir de la sortie de la commande
+# Récupère le nom de chaque table
 tables=($(echo $input | grep -oP '(?<=\[)[^\:[]+'))
-# Récupère la date de la dernière entrée pour chaque table à partir de la sortie de la commande
+# Récupère la date de la dernière entrée pour chaque table
 dates=$(echo $input | grep -oP '(?<=: )[^\]]+' | awk '{print $1}')
 
 # Convertit la date en format "aaaa-mm-jj" et gère les cas avec une date manquante (EMPTY)
@@ -96,12 +97,13 @@ for date in $dates; do
     fi
 done
 
-# Parcours les tables  en fonction de leur nom, leurs scripts correspondants et leur date
+# Parcours les tables en fonction de leur nom, leurs scripts correspondants et leur date
 for (( i=0; i<${#tables[@]}; i++ )); do
     table=${tables[$i]}
     date=${formatted_dates[$i]}
 
   # for key in "${!table_script_relations[@]}"; do
+  # Afin de gérer le cas nom de table identique, plusieurs serveurs, bonne ordre
     for key in `printf '%s\n' "${!table_script_relations[@]}" | sort`; do
 
         script_table="${key%,*}"
