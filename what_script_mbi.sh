@@ -47,8 +47,8 @@ function convert_to_csv {
     local server_name="$2"
     local script_name="${table_script_relations[$table_name,$server_name]}"
     local date_value="$3"
-
-    if [[ $date_value == "EMPTY" || "$script_name" == *"centreon-bam-rebuild-events"* ]]; then
+#Add cases for no -s -e options
+    if [[ $date_value == "EMPTY" || "$script_name" == *"centreon-bam-rebuild-events"*  || "$script_name" == *"dimensionsBuilder.pl"* || "$script_name" == *"centreonBIETL -rIC"* ]]; then
         echo "$a;$table_name;$server_name;$script_name" >> /tmp/mib_db_content_csv
     else
         today=$(date +%Y-%m-%d)
