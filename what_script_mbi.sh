@@ -67,7 +67,7 @@ function display_scripts {
                 else
                          table_conjug="la table"
                 fi
-                         echo "Pour $table_conjug \`\`${table_name_ds/,/ et }\`\` : <u>(sur le serveur ${server_step_ds/_/ étape })</u>"
+                         echo "Pour $table_conjug \`\`${table_name_ds/,/\`\` et \`\`}\`\` : <u>(sur le serveur ${server_step_ds/_/ étape })</u>"
                          echo "\`\`\`"
                          echo "${script_ds} >> /tmp/partial_rebuild_$today.log"
                          echo "\`\`\`"
