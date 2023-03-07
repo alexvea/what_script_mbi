@@ -82,8 +82,8 @@ function display_scripts {
 
 input=$1
 
-# Récupère le nom de chaque table
-tables=($(echo $input | grep -oP '(?<=\[)[^\:[]+'))
+# Récupère le nom de chaque table, gestion du cas [Table mod_bi_hgservicemonthavailability: xxxx]
+tables=($(echo $input | grep -oP '(?<=\[)[^\:[]+' | sed 's/Table //g')
 # Récupère la date de la dernière entrée pour chaque table
 dates=$(echo $input | grep -oP '(?<=: )[^\]]+' | awk '{print $1}')
 
