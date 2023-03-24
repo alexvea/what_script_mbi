@@ -10,7 +10,6 @@ MBI_SCRIPT_PATH="/usr/share/centreon-bi/etl"
 
 # Tableau associatif avec les noms de scripts pour chaque table et chaque serveur
 declare -A table_script_relations=(
-  # ajout d'une entrée vide afin de gérer le bonne ordre (Central / MBI) pour la première table
   ["",""]=""
   ["mod_bam_reporting_ba_availabilities","Central"]="${CENTRAL_SCRIPT_PATH}/centreon-bam-rebuild-events --all"
   ["mod_bam_reporting_ba_availabilities","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --bam-only"
@@ -23,18 +22,21 @@ declare -A table_script_relations=(
 #  ["mod_bi_time","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
   ["mod_bi_hostavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
   ["mod_bi_serviceavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
-  ["mod_bi_hgmonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
-  ["mod_bi_hgservicemonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --availability-only"
+  ["mod_bi_hgmonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --month-only --availability-only"
+  ["mod_bi_hgservicemonthavailability","MBI"]="${MBI_SCRIPT_PATH}/eventStatisticsBuilder.pl -r --no-purge --month-only --availability-only"
   ["data_bin","MBI"]="${MBI_SCRIPT_PATH}/importData.pl -r --no-purge --databin-only"
   ["mod_bi_metricdailyvalue","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
-  ["mod_bi_metricmonthcapacity","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
+  ["mod_bi_metricmonthcapacity","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge --month-only --no-centile"
   ["mod_bi_metrichourlyvalue","MBI"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --no-purge"
   ["mod_bi_metriccentiledailyvalue","MBI"]="/usr/share/centreon-bi/bin/centreonBIETL -rIC"
   ["mod_bi_metriccentiledailyvalue","MBI_2"]="${MBI_SCRIPT_PATH}/dimensionsBuilder.pl -d"
   ["mod_bi_metriccentiledailyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only"
+  ["mod_bi_metriccentileweeklyvalue","MBI"]="/usr/share/centreon-bi/bin/centreonBIETL -rIC"
+  ["mod_bi_metriccentileweeklyvalue","MBI_2"]="${MBI_SCRIPT_PATH}/dimensionsBuilder.pl -d"
+  ["mod_bi_metriccentileweeklyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only"
   ["mod_bi_metriccentilemonthlyvalue","MBI"]="/usr/share/centreon-bi/bin/centreonBIETL -rIC"
   ["mod_bi_metriccentilemonthlyvalue","MBI_2"]="${MBI_SCRIPT_PATH}/dimensionsBuilder.pl -d"
-  ["mod_bi_metriccentilemonthlyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only"
+  ["mod_bi_metriccentilemonthlyvalue","MBI_3"]="${MBI_SCRIPT_PATH}/perfdataStatisticsBuilder.pl -r --centile-only --month-only"
 )
 
 [ -e /tmp/mib_db_content_csv ] && rm /tmp/mib_db_content_csv
@@ -48,7 +50,7 @@ function convert_to_csv {
     local script_name="${table_script_relations[$table_name,$server_name]}"
     local date_value="$3"
 #Add cases for no -s -e options
-    if [[ $date_value == "EMPTY" || "$script_name" == *"centreon-bam-rebuild-events"*  || "$script_name" == *"dimensionsBuilder.pl"* || "$script_name" == *"centreonBIETL -rIC"* ]]; then
+    if [[ $date_value == "EMPTY" || "$script_name" == *"centreon-bam-rebuild-events"*  || "$script_name" == *"dimensionsBuilder.pl"* || "$script_name" == *"centreonBIETL -rIC"* || "$script_name" == *"--month-only"*  ]]; then
         echo "$a;$table_name;$server_name;$script_name" >> /tmp/mib_db_content_csv
     else
         today=$(date +%Y-%m-%d)
