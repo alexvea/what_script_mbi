@@ -102,6 +102,14 @@ Pour la table ``mod_bi_metriccentileweeklyvalue`` : <u>(sur le serveur MBI étap
 ```
 
 
+What are the functionnalities of the script : 
+* Formatting in Markdown.
+* Support EMPTY table.
+* Regroup tables with same script and same period of time on one step.
+* Support multistep and multiserver for one table.
+* Support case when db-content output table are \[Table table_name: date] or \[table_name: date].
+* Support custom CENTRAL_SCRIPT and MBI_SCRIPT paths.
+
 Note : please use if if you know what you are doing.
 This is not 100% compatible wifh 22.10 MBI version (issus with --no-purge option), I recommand you to modify the procedure to use legacy script (perfdataStatisticsBuilder_legacy.pl instead of perfdataStatisticsBuilder.pl).
 Be carefull when using -r, -s and -e without --no-purge options otherwise it will empty statistics tables. Note :  Does not work on raw data tables, only on Centreon BI statistics tables.
