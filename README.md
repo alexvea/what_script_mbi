@@ -2,7 +2,7 @@
 only for tests at the moment
 
 
-The script allows you to generate a custom procedure with the /usr/share/centreon-bi/etl/centreonbiMonitoring.pl --db-content output.
+The script allows you to generate a custom procedure in markdown syntax with the /usr/share/centreon-bi/etl/centreonbiMonitoring.pl --db-content output.
 
 Exemple of MBI db-content output : 
 ```
